@@ -43,8 +43,9 @@
 
 ;; Set up package.el to work with MELPA
 (require 'package)
-(add-to-list 'package-archives
-             '("melpa" . "https://melpa.org/packages/") t)
+(setq package-archives '(("melpa" . "https://melpa.org/packages/")
+                         ("org" . "https://orgmode.org/elpa/")
+                         ("elpa" . "https://elpa.gnu.org/packages/")))
 (package-initialize)
 (unless package-archive-contents
   (package-refresh-contents))
@@ -85,9 +86,10 @@
 (use-package counsel
   :bind (("M-x" . counsel-M-x)
          ("C-x b" . counsel-ibuffer)
-         ("C-x C-f" . counsel-find-file)
+         ("C-x C-f" . counsel-file-jump-from-find)
          :map minibuffer-local-map
          ("C-r" . 'counsel-minibuffer-history)))
+
 (require 'popup)
 
 
@@ -196,6 +198,25 @@
   ([remap describe-variable] . counsel-describe-variable)
   ([remap describe-key] . helpful-key))
 
+(use-package projectile
+  :diminish projectile-mode
+  :config (projectile-mode)
+  :bind-keymap
+  ("C-c p" . projectile-command-map)
+  :init
+  (when (file-directory-p "~/Workspace")
+    (setq projectile-project-search-path '("~/Workspace")))
+  (setq projectile-switch-project-action #'projectile-dired))
+(use-package counsel-projectile
+ :after projectile
+ :config
+ (counsel-projectile-mode 1))
+
+(use-package magit
+  :commands (magit-status magit-get-current-branch)
+  :custom
+  (magit-display-buffer-function #'magit-display-buffer-same-window-except-diff-v1))
+
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -207,7 +228,7 @@
     ("c4063322b5011829f7fdd7509979b5823e8eea2abf1fe5572ec4b7af1dd78519" default)))
  '(package-selected-packages
    (quote
-    (general doom-themes helpful ivy-rich which-key rainbow-delimiters doom-modeline all-the-icons popup counsel swiper ivy evil))))
+    (counsel-projectile projectile general doom-themes helpful ivy-rich which-key rainbow-delimiters doom-modeline all-the-icons popup counsel swiper ivy evil))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
