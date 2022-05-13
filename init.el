@@ -1,7 +1,7 @@
 ;; close welcome page
 
 ;; You will most likely need to adjust this font size for your system!
-(defvar runemacs/default-font-size 140)
+(defvar runemacs/default-font-size 120)
 
 (setq inhibit-startup-screen t)
 (setq apropos-sort-by-scores t)
@@ -11,6 +11,8 @@
 (setq backup-directory-alist '(("." . "~/.cache/emacs/")))
 (setq auto-save-file-name-transforms
   `((".*" "~/.cache/emacs/" t)))
+(setq find-program "fd")
+(setq counsel-file-jump-args (split-string "-L --type f"))
 
 (save-place-mode)
 (load-theme 'tango-dark t)
@@ -20,7 +22,7 @@
 (global-set-key [remap dabbrev-expand] 'hippie-expand)
 (show-paren-mode 1)
 
-(set-face-attribute 'default nil :height runemacs/default-font-size)
+(set-face-attribute 'default nil :font "Hack Nerd Font Mono" :height runemacs/default-font-size)
 
 ;; Set the fixed pitch face
 (set-face-attribute 'fixed-pitch nil  :height 160)
@@ -49,7 +51,9 @@
 	(concat "/sudo:root@localhost:"
 	    buffer-file-name))))
 
-
+(defun back-and-forth-buffer ()
+	(interactive)
+	(switch-to-buffer (other-buffer (current-buffer))))
 
 
 
@@ -91,7 +95,9 @@
          ("C-k" . ivy-previous-line)
          ("C-d" . ivy-reverse-i-search-kill))
   :config
-  (ivy-mode 1))
+  (ivy-mode 1)
+  (setq ivy-use-virtual-buffers t)
+  (setq ivy-count-format "(%d/%d) "))
 (use-package swiper)
 ;; (use-package counsel)
 (use-package popup)
@@ -107,6 +113,57 @@
 
 (require 'popup)
 
+(use-package ivy-prescient
+  :after counsel
+  :init
+  (ivy-prescient-mode 1)
+  :config
+  (setq prescient-history-length 10))
+
+(recentf-mode 1)
+
+(defun eh-ivy-return-recentf-index (dir)
+  (when (and (boundp 'recentf-list)
+             recentf-list)
+    (let ((files-list
+           (cl-subseq recentf-list
+                      0 (min (- (length recentf-list) 1) 20)))
+          (index 0))
+      (while files-list
+        (if (string-match-p dir (car files-list))
+            (setq files-list nil)
+          (setq index (+ index 1))
+          (setq files-list (cdr files-list))))
+      index)))
+
+(defun eh-ivy-sort-file-function (x y)
+  (let* ((x (concat ivy--directory x))
+         (y (concat ivy--directory y))
+         (x-mtime (nth 5 (file-attributes x)))
+         (y-mtime (nth 5 (file-attributes y))))
+    (if (file-directory-p x)
+        (if (file-directory-p y)
+            (let ((x-recentf-index (eh-ivy-return-recentf-index x))
+                  (y-recentf-index (eh-ivy-return-recentf-index y)))
+              (if (and x-recentf-index y-recentf-index)
+                  ;; Directories is sorted by `recentf-list' index
+                  (< x-recentf-index y-recentf-index)
+                (string< x y)))
+          t)
+      (if (file-directory-p y)
+          nil
+        ;; Files is sorted by mtime
+        (time-less-p y-mtime x-mtime)))))
+
+
+(add-to-list 'ivy-sort-functions-alist
+             '(read-file-name-internal . eh-ivy-sort-file-function)
+             '(counsel-file-jump-from-find . ivy-sort-by-length))
+(defun ivy-sort-by-length (_name candidates)
+  (cl-sort (copy-sequence candidates)
+           (lambda (f1 f2)
+             (< (length f1) (length f2)))))
+
 
 (use-package general
   :config
@@ -121,6 +178,7 @@
 
 (yancy/leader-keys
   "t"  '(:ignore t :which-key "toggles")
+  "RET"  '(evil-ex-nohighlight :which-key "clear the highlight")
   "w"  '(save-buffer :which-key "save buffer")
   "q"  '(save-buffers-kill-terminal :which-key "save buffer and exit buffer")
   "tt" '(counsel-load-theme :which-key "choose theme"))
@@ -152,9 +210,9 @@
   (setq evil-want-integration t)
   (setq evil-want-keybinding nil)
   (setq evil-want-C-u-scroll t)
-  (setq evil-want-C-i-jump nil)
+  (setq evil-want-C-i-jump t)
   (setq evil-undo-system 'undo-fu)
-
+  (setq evil-search-module 'evil-search)
 ;;  :hook (evil-mode . yancy/evil-hook)
 
   :config ;; tweak evil after loading it
@@ -297,11 +355,9 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   (quote
-    ("c4063322b5011829f7fdd7509979b5823e8eea2abf1fe5572ec4b7af1dd78519" default)))
+   '("c4063322b5011829f7fdd7509979b5823e8eea2abf1fe5572ec4b7af1dd78519" default))
  '(package-selected-packages
-   (quote
-    (counsel-projectile projectile general doom-themes helpful ivy-rich which-key rainbow-delimiters doom-modeline all-the-icons popup counsel swiper ivy evil))))
+   '(ivy-prescient prescient counsel-projectile projectile general doom-themes helpful ivy-rich which-key rainbow-delimiters doom-modeline all-the-icons popup counsel swiper ivy evil)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

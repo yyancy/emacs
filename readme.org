@@ -10,10 +10,10 @@ asdfasdf
 ** admin
 *** 
 * Heading
-| Name       | Age  | Uses Emacs |
-|------------+------+------------|
-| asdfsafdsa | asdf | asdfasdf   |
-|            |      |            |
+| Name                    | Age  | Uses Emacs |
+|-------------------------+------+------------|
+| asdfasdfasdf asdfsafdsa | asdf | asdfasdf   |
+|                         |      |            |
 
 - [X] First item
 - [ ] 
